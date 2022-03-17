@@ -1,0 +1,23 @@
+{
+  "name": "node-pkg",
+  "version": "1.0.0",
+  "description": "一个 node package 的初始化代码。",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp",
+    "build:test": "gulp test",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "del": "^6.0.0",
+    "gulp": "^4.0.2",
+    "gulp-uglify-es": "^3.0.0",
+    "shelljs": "^0.8.5",
+    "tar": "^6.1.11"
+  }
+}

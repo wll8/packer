@@ -1,0 +1,10 @@
+{
+  "name": "pkg",
+  "version": "0.0.1",
+  "description": "a demo~",
+  "main": "index.js",
+  "bin": {
+    "pkg": "index.js"
+  },
+  "dependencies": {}
+}
