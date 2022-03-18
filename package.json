@@ -1,7 +1,7 @@
 {
-  "name": "node-pkg",
+  "name": "packer",
   "version": "1.0.0",
-  "description": "一个 node package 的初始化代码。",
+  "description": "一个 node cli 模板, 自带打包器",
   "main": "index.js",
   "scripts": {
     "build": "gulp",
@@ -15,13 +15,8 @@
   "devDependencies": {
     "@vercel/ncc": "^0.33.3",
     "compressing": "^1.5.1",
-    "del": "^6.0.0",
     "gulp": "^4.0.2",
-    "gulp-uglify-es": "^3.0.0",
     "javascript-obfuscator": "^4.0.0",
-    "shelljs": "^0.8.5",
-    "tar": "^6.1.11",
-    "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "shelljs": "^0.8.5"
   }
 }
