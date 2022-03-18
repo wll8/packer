@@ -1,3 +1,4 @@
 #!/usr/bin/env node
 
-console.log(`hello word~`)
+const shelljs = require('shelljs');
+shelljs.exec(`echo hello word~`)
