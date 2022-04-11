@@ -4,8 +4,9 @@
   "description": "一个 node cli 模板, 自带打包器",
   "main": "index.js",
   "scripts": {
-    "build": "gulp",
-    "build:test": "gulp test",
+    "build": "node index.js",
+    "build:test": "node index.js test",
+    "build:minxin": "node index.js minxin",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,7 +16,6 @@
   "devDependencies": {
     "@vercel/ncc": "^0.33.3",
     "compressing": "^1.5.1",
-    "gulp": "^4.0.2",
     "javascript-obfuscator": "^4.0.0",
     "shelljs": "^0.8.5"
   }
