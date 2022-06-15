@@ -38,25 +38,27 @@ function compress() {
   const JavaScriptObfuscator = require('javascript-obfuscator');
   const codePath = `./dist/package/index.js`
   const rawCode = fs.readFileSync(codePath, `utf8`)
+
+  // see: https://github.com/javascript-obfuscator/javascript-obfuscator#high-obfuscation-low-performance
   const obfuscationResult = JavaScriptObfuscator.obfuscate(rawCode,
     {
-      compact: true,
-      controlFlowFlattening: true,
+      compact: true, // 压缩为一行
+      controlFlowFlattening: true, // 改变代码结构, 会让程序变慢
       controlFlowFlatteningThreshold: 1,
-      deadCodeInjection: true,
+      deadCodeInjection: true, // 添加混淆
       deadCodeInjectionThreshold: 1,
-      // debugProtection: true,
+      // debugProtection: true, // 开启循环 debug 阻碍调试
       // debugProtectionInterval: 4000,
-      disableConsoleOutput: true,
-      identifierNamesGenerator: 'hexadecimal',
-      log: false,
-      numbersToExpressions: true,
-      renameGlobals: false,
-      selfDefending: true,
-      simplify: true,
-      splitStrings: true,
+      disableConsoleOutput: true, // 禁止输出 console.xxx 日志
+      identifierNamesGenerator: 'hexadecimal', // 转换字符串为 16 进制
+      log: false, // 禁止输出 console.log
+      numbersToExpressions: true, // 转换数字为表达式
+      renameGlobals: false, // 混淆全局变量
+      selfDefending: true, // 自我防御
+      simplify: true, // 以简写方式混淆
+      splitStrings: true, // 分割字面量的字符串
       splitStringsChunkLength: 5,
-      stringArray: true,
+      stringArray: true, // 分割字面量到数组
       stringArrayCallsTransform: true,
       stringArrayEncoding: ['rc4'],
       stringArrayIndexShift: true,
@@ -67,8 +69,8 @@ function compress() {
       stringArrayWrappersParametersMaxCount: 5,
       stringArrayWrappersType: 'function',
       stringArrayThreshold: 1,
-      transformObjectKeys: true,
-      unicodeEscapeSequence: false,
+      transformObjectKeys: true, // 转换对象的 key
+      unicodeEscapeSequence: false, // 转换字符串为 Unicode
     }
   );
   const outCode = obfuscationResult.getObfuscatedCode()
