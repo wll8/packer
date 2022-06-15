@@ -180,6 +180,7 @@ async function build() {
     query[`--minxin`] && await task.minxin()
     query[`--test`] && await task.test()
   }
+  process.exit()
 }
 
 build()
