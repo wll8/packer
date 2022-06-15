@@ -6,8 +6,45 @@ const package = require(packagePath)
 const {name, version, bin = {}} = package
 const packName = `${name}-${version}.tgz`
 
-const argv = parseArgv()
-console.log(`argv`, argv)
+const argv = util.parseArgv()
+const query = (function () {
+  const sourceCode = arguments.callee.toString()
+  return {
+    ...argv,
+    '--input': argv[`--input`] ?? `./`, // 要打包的依赖, 默认 ./
+    '--out': argv[`--out`] ?? `./`, // 输出位置, 默认 ./
+    '--ncc': argv[`--ncc`] ?? true, // 合并为单文件, 默认 true
+    '--compress': argv[`--compress`] ?? true, // 压缩, 默认 true
+    '--compress-x': argv[`--compress-x`] ?? ``, // 压缩选项, 例如 --compress-splitStrings=true
+    '--minxin': argv[`--minxin`] ?? ``, // 混入 bin 到某个 package, 例如 --minxin=shelljs
+    get '--help' () {
+      const matchAll = [...sourceCode.matchAll(/: argv\[`(.+?)`] \?\? (.+?), \/\/ (.*)/g)]
+      const str = matchAll.reduce((acc, [, key, val, desc]) => {
+        return acc + `${key}=${val} ${desc}\n`
+      }, ``)
+      return str
+    },
+  }
+})();
+
+
+if(argv[`--help`]) {
+  console.log(query[`--help`])
+  process.exit()
+}
+
+if(query[`--compress`]) {
+  query[`--compress`] = Object.entries(query).reduce((acc, [key, val]) => {
+    const newKey = key.replace(`--compress-`, ``)
+    if(newKey !== key) {
+      acc[newKey] = val
+      delete query[key]
+    }
+    return acc
+  }, {})
+}
+
+console.log(`命令行参数>> `, query)
 
 /**
  * 清理发布目录
@@ -33,52 +70,6 @@ function ncc() {
 }
 
 /**
- * 压缩
- */
-function compress() {
-  const JavaScriptObfuscator = require('javascript-obfuscator');
-  const codePath = `./dist/package/index.js`
-  const rawCode = fs.readFileSync(codePath, `utf8`)
-
-  // see: https://github.com/javascript-obfuscator/javascript-obfuscator#high-obfuscation-low-performance
-  const obfuscationResult = JavaScriptObfuscator.obfuscate(rawCode,
-    {
-      compact: true, // 压缩为一行
-      controlFlowFlattening: true, // 改变代码结构, 会让程序变慢
-      controlFlowFlatteningThreshold: 1,
-      deadCodeInjection: true, // 添加混淆
-      deadCodeInjectionThreshold: 1,
-      // debugProtection: true, // 开启循环 debug 阻碍调试
-      // debugProtectionInterval: 4000,
-      disableConsoleOutput: true, // 禁止输出 console.xxx 日志
-      identifierNamesGenerator: 'hexadecimal', // 转换字符串为 16 进制
-      log: false, // 禁止输出 console.log
-      numbersToExpressions: true, // 转换数字为表达式
-      renameGlobals: false, // 混淆全局变量
-      selfDefending: true, // 自我防御
-      simplify: true, // 以简写方式混淆
-      splitStrings: true, // 分割字面量的字符串
-      splitStringsChunkLength: 5,
-      stringArray: true, // 分割字面量到数组
-      stringArrayCallsTransform: true,
-      stringArrayEncoding: ['rc4'],
-      stringArrayIndexShift: true,
-      stringArrayRotate: true,
-      stringArrayShuffle: true,
-      stringArrayWrappersCount: 5,
-      stringArrayWrappersChainedCalls: true,    
-      stringArrayWrappersParametersMaxCount: 5,
-      stringArrayWrappersType: 'function',
-      stringArrayThreshold: 1,
-      transformObjectKeys: true, // 转换对象的 key
-      unicodeEscapeSequence: false, // 转换字符串为 Unicode
-    }
-  );
-  const outCode = obfuscationResult.getObfuscatedCode()
-  fs.writeFileSync(codePath, outCode)
-}
-
-/**
  * 打包成供发布的包
  */
 function pack() {
@@ -96,28 +87,28 @@ function pack() {
 /**
  * 测试运行
  */
-async function test() {
+async function test(minxin) {
   const cliName = Object.keys(bin)[0]
   const cmd = `npx ${cliName}`
   let pkgPath = ``
-  if(argv.minxin) {
-    const name = `shelljs`
-    const { packName } = await getPackFile(`./node_modules/${name}/`)
+  if(minxin) {
+    const { packName } = await util.getPackFile(`./node_modules/${minxin}/`)
     pkgPath = `${__dirname}/dist/${packName}`
   } else {
     pkgPath = `${__dirname}/dist/${packName}`
   }
   shell.exec(`cd dist && npm init -y`)
-  shell.exec(`cd dist && yarn add ${pkgPath} --registry=https://registry.npm.taobao.org`)
+  shell.exec(`cd dist && npx cnpm i -S ${pkgPath}`)
   shell.exec(`cd dist && ${cmd}`)
 }
 
 /**
- * 混入到宿主包
+ * 混入 package 文件到宿主包
+ * name 宿主包名称
  */
 async function minxin(name = `shelljs`) {
   // 提取宿主
-  const { package, packName } = await getPackFile(`./node_modules/${name}/`, `./dist/${name}/`)
+  const { package, packName } = await util.getPackFile(`./node_modules/${name}/`, `./dist/${name}/`)
   // 在宿主中注入文件
   shell.exec(`npx shx cp -rf ./dist/package ./dist/${name}/_minxin`)
   package.files = [
@@ -138,57 +129,11 @@ async function minxin(name = `shelljs`) {
   shell.exec(`cd ./dist/${name}/ && npm pack && npx shx mv ${packName} ../`)
 }
 
-function parseArgv(arr) { // 解析命令行参数
-  return (arr || process.argv.slice(2)).reduce((acc, arg) => {
-    let [k, ...v] = arg.split(`=`)
-    v = v.join(`=`) // 把带有 = 的值合并为字符串
-    acc[k] = v === `` // 没有值时, 则表示为 true
-      ? true
-      : (
-        /^(true|false)$/.test(v) // 转换指明的 true/false
-        ? v === `true`
-        : (
-          /[\d|.]+/.test(v)
-          ? (isNaN(Number(v)) ? v : Number(v)) // 如果转换为数字失败, 则使用原始字符
-          : v
-        )
-      )
-    return acc
-  }, {})
-}
-
-/**
- * 提取指定包的文件到某目录
- * inputDir 包路径
- * outDir 输出路径, 如果不传则只返回包信息
- */
-async function getPackFile(inputDir, outDir) {
-  const path = require(`path`)
-  const os = require(`os`)
-  const package = require(`${inputDir}/package.json`)
-  const packName = `${package.name}-${package.version}.tgz`
-  const packPath = `${inputDir}/${packName}`
-  const tempDir = path.normalize(`${os.tmpdir()}/${Date.now()}/`)
-  
-  if(outDir) {
-    shell.exec(`cd ${inputDir} && npm pack`)
-    const compressing = require('compressing')
-    await compressing.tgz.uncompress(packPath, tempDir).catch(console.log)
-    shell.exec(`npx shx rm -f ${packPath}`)
-    
-    shell.exec(`npx shx cp -r ${tempDir}/package ${outDir}`)
-  }
-  return {
-    packName,
-    package,
-  }
-}
-
 const task = new Proxy({
   clear,
-  getPackFile,
+  getPackFile: util.getPackFile,
   ncc,
-  compress,
+  compress: util.compress,
   pack,
   minxin,
   test,
@@ -196,7 +141,15 @@ const task = new Proxy({
   get(obj, key) {
     return () => {
       const arg = {
+        test: [query[`--minxin`]],
         getPackFile: [`./src/`, `./dist/package`],
+        minxin: [query[`--minxin`]],
+        compress: [
+          {
+            codePath: `./dist/package/index.js`,
+            cfg: query[`--compress`],
+          },
+        ],
       }[key] || []
       const timeLable = util.getFullLine({name: [
         `task-time ${key}`,
@@ -216,16 +169,16 @@ const task = new Proxy({
 })
 
 async function build() {
-  if(argv[`--run`]) {
-    await Promise.all(argv[`--run`].split(`,`).map(name => task[name]()))
+  if(query[`--run`]) {
+    await Promise.all(query[`--run`].split(`,`).map(name => task[name]()))
   } else {
     await task.clear()
     await task.getPackFile()
-    await task.ncc()
-    await task.compress()
+    query[`--ncc`] && await task.ncc()
+    query[`--compress`] && await task.compress()
     await task.pack()
-    argv.minxin && await task.minxin(argv.minxin)
-    argv.test && await task.test()
+    query[`--minxin`] && await task.minxin()
+    query[`--test`] && await task.test()
   }
 }
 

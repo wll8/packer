@@ -20,13 +20,11 @@ npm run build:test
 - [x] feat: 打包为单文件
 - [x] feat: 压缩
 - [x] feat: 支持使用 `--run=fn1,fn2,...` 的形式运行指定任务
-- [ ] feat: gulp 支持传参选择任务
 - [ ] feat: 封装为打包工具, 便于打包任意项目
 - [ ] feat: 支持参数
   - --input 要打包的依赖, 默认 ./
   - --out 输出位置, 默认 ./
-  - --alone 合并为单文件, 默认 true
-  - --encode 编码, 默认 true
-  - --encode--package 编码 package, 默认 false
-  - --obfuscator--xxx javascript-obfuscator 选项, 例如 --obfuscator--compact
-  - --minxin 混入 bin 到某个 package
+  - [x] --ncc 合并为单文件, 默认 true
+  - [x] --compress 压缩, 默认 false
+  - [x] --compress-x 压缩选项, 例如 --compress-compact=false
+  - [x] --minxin 混入 bin 到某个 package, 例如 --minxin=shelljs
