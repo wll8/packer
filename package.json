@@ -4,19 +4,24 @@
   "description": "一个 node cli 模板, 自带打包器",
   "main": "index.js",
   "scripts": {
-    "build": "node index.js",
-    "build:test": "node index.js test",
-    "build:minxin": "node index.js minxin",
+    "build": "node index.js --minxin=shelljs",
+    "build:test": "node index.js --minxin=shelljs --test",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
     "@vercel/ncc": "^0.33.3",
     "compressing": "^1.5.1",
     "javascript-obfuscator": "^4.0.0",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "shx": "^0.3.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "4.4.6"
   }
 }
