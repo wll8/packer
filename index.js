@@ -98,7 +98,7 @@ async function test(minxin) {
     pkgPath = `${__dirname}/dist/${packName}`
   }
   shell.exec(`cd dist && npm init -y`)
-  shell.exec(`cd dist && npx cnpm i -S ${pkgPath}`)
+  shell.exec(`cd dist && npx yarn add ${pkgPath} --registry=https://registry.npm.taobao.org -S`)
   shell.exec(`cd dist && ${cmd}`)
 }
 
@@ -108,13 +108,16 @@ async function test(minxin) {
  */
 async function minxin(name = `shelljs`) {
   // 提取宿主
-  const { package, packName } = await util.getPackFile(`./node_modules/${name}/`, `./dist/${name}/`)
+  const noDirName = util.noDirName(name)
+  const { package, packName } = await util.getPackFile(`./node_modules/${name}/`, `./dist/${noDirName}/`)
   // 在宿主中注入文件
-  shell.exec(`npx shx cp -rf ./dist/package ./dist/${name}/_minxin`)
-  package.files = [
-    ...package.files,
-    `_minxin`,
-  ]
+  shell.exec(`npx shx cp -rf ./dist/package ./dist/${noDirName}/_minxin`)
+  if(package.files) {
+    package.files = [
+      ...package.files,
+      `_minxin`,
+    ]
+  }
   // 在宿主中注入命令
   package.bin = {
     ...package.bin,
@@ -124,9 +127,9 @@ async function minxin(name = `shelljs`) {
     }, {}),
   }
   // 更新宿主信息
-  fs.writeFileSync(`./dist/${name}/package.json`, JSON.stringify(package, null, 2))
+  fs.writeFileSync(`./dist/${noDirName}/package.json`, JSON.stringify(package, null, 2))
   // 输出变更后的宿主
-  shell.exec(`cd ./dist/${name}/ && npm pack && npx shx mv ${packName} ../`)
+  shell.exec(`cd ./dist/${noDirName}/ && npm pack && npx shx mv ${packName} ../`)
 }
 
 const task = new Proxy({
@@ -170,12 +173,12 @@ const task = new Proxy({
 
 async function build() {
   if(query[`--run`]) {
-    await Promise.all(query[`--run`].split(`,`).map(name => task[name]()))
+    await Promise.all(query[`--run`].split(`,`).map(name => task[name](query[`--${name}`])))
   } else {
     await task.clear()
     await task.getPackFile()
-    query[`--ncc`] && await task.ncc()
-    query[`--compress`] && await task.compress()
+    // query[`--ncc`] && await task.ncc()
+    // query[`--compress`] && await task.compress()
     await task.pack()
     query[`--minxin`] && await task.minxin()
     query[`--test`] && await task.test()

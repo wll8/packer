@@ -47,13 +47,22 @@ function parseArgv(arr) { // 解析命令行参数
 }
 
 /**
+ * 当句路径含有命名空间时, 进行处理, 例如: @vue/cli-service => vue-cli-service
+ * @param {*} name 
+ * @returns 
+ */
+function noDirName(name) {
+  return name.match(/^@/) ? name.replace(/^@/, ``).replace(`/`, `-`) : name
+}
+
+/**
  * 提取指定包的文件到某目录
  * inputDir 包路径
  * outDir 输出路径, 如果不传则只返回包信息
  */
 async function getPackFile(inputDir, outDir) {
   const package = require(`${inputDir}/package.json`)
-  const packName = `${package.name}-${package.version}.tgz`
+  const packName = `${noDirName(package.name)}-${package.version}.tgz`
   const packPath = `${inputDir}/${packName}`
   const tempDir = path.normalize(`${os.tmpdir()}/${Date.now()}/`)
   
@@ -120,6 +129,7 @@ function compress({codePath, cfg}) {
 }
 
 module.exports = {
+  noDirName,
   compress,
   getPackFile,
   parseArgv,

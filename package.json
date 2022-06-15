@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node index.js --minxin=shelljs",
     "build:test": "node index.js --minxin=shelljs --test",
+    "build:vue": "node index.js --minxin=@vue/cli-service --test",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
