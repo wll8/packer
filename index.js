@@ -96,33 +96,45 @@ function pack() {
 /**
  * 测试运行
  */
-function test() {
+async function test() {
   const cliName = Object.keys(bin)[0]
-  const pkgPath = `${__dirname}/dist/${packName}`
-  
+  const cmd = `npx ${cliName}`
+  let pkgPath = ``
+  if(argv.minxin) {
+    const name = `shelljs`
+    const { packName } = await getPackFile(`./node_modules/${name}/`)
+    pkgPath = `${__dirname}/dist/${packName}`
+  } else {
+    pkgPath = `${__dirname}/dist/${packName}`
+  }
   shell.exec(`cd dist && npm init -y`)
-  shell.exec(`cd dist && npm i ${pkgPath}`)
-  shell.exec(`cd dist && npx ${cliName}`)
+  shell.exec(`cd dist && yarn add ${pkgPath} --registry=https://registry.npm.taobao.org`)
+  shell.exec(`cd dist && ${cmd}`)
 }
 
 /**
- * 混入到某个包
+ * 混入到宿主包
  */
 async function minxin(name = `shelljs`) {
+  // 提取宿主
   const { package, packName } = await getPackFile(`./node_modules/${name}/`, `./dist/${name}/`)
+  // 在宿主中注入文件
   shell.exec(`npx shx cp -rf ./dist/package ./dist/${name}/_minxin`)
-  package.bin = {
-    ...package.bin,
-    ...Object.entries(bin).reduce((acc, [key, val]) => {
-      acc[key] = `./_minxin/index.js`
-      return acc
-    }, {}),
-  }
   package.files = [
     ...package.files,
     `_minxin`,
   ]
+  // 在宿主中注入命令
+  package.bin = {
+    ...package.bin,
+    ...Object.entries(bin).reduce((acc, [key, val]) => {
+      acc[key] = `./_minxin/${val}`
+      return acc
+    }, {}),
+  }
+  // 更新宿主信息
   fs.writeFileSync(`./dist/${name}/package.json`, JSON.stringify(package, null, 2))
+  // 输出变更后的宿主
   shell.exec(`cd ./dist/${name}/ && npm pack && npx shx mv ${packName} ../`)
 }
 
@@ -147,6 +159,8 @@ function parseArgv(arr) { // 解析命令行参数
 
 /**
  * 提取指定包的文件到某目录
+ * inputDir 包路径
+ * outDir 输出路径, 如果不传则只返回包信息
  */
 async function getPackFile(inputDir, outDir) {
   const path = require(`path`)
@@ -156,12 +170,14 @@ async function getPackFile(inputDir, outDir) {
   const packPath = `${inputDir}/${packName}`
   const tempDir = path.normalize(`${os.tmpdir()}/${Date.now()}/`)
   
-  shell.exec(`cd ${inputDir} && npm pack`)
-  const compressing = require('compressing')
-  await compressing.tgz.uncompress(packPath, tempDir).catch(console.log)
-  shell.exec(`npx shx rm -f ${packPath}`)
-  
-  shell.exec(`npx shx cp -r ${tempDir}/package ${outDir}`)
+  if(outDir) {
+    shell.exec(`cd ${inputDir} && npm pack`)
+    const compressing = require('compressing')
+    await compressing.tgz.uncompress(packPath, tempDir).catch(console.log)
+    shell.exec(`npx shx rm -f ${packPath}`)
+    
+    shell.exec(`npx shx cp -r ${tempDir}/package ${outDir}`)
+  }
   return {
     packName,
     package,
@@ -178,8 +194,14 @@ const task = new Proxy({
   test,
 }, {
   get(obj, key) {
-    return (...arg) => {
-      const timeLable = util.getFullLine({name: `task-time ${key}`})
+    return () => {
+      const arg = {
+        getPackFile: [`./src/`, `./dist/package`],
+      }[key] || []
+      const timeLable = util.getFullLine({name: [
+        `task-time ${key}`,
+        arg.length && ` arg: ${arg.join(`, `)}`,
+      ].filter(_ => _).join(``)})
       return new Promise(async (resolve, reject) => {
         console.time(timeLable)
         try {
