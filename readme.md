@@ -19,6 +19,7 @@ npm run build:test
 - [x] feat: 使用 npm pack 进行打包
 - [x] feat: 打包为单文件
 - [x] feat: 压缩
+- [x] feat: 支持使用 `--run=fn1,fn2,...` 的形式运行指定任务
 - [ ] feat: gulp 支持传参选择任务
 - [ ] feat: 封装为打包工具, 便于打包任意项目
 - [ ] feat: 支持参数

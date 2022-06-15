@@ -194,13 +194,17 @@ const task = new Proxy({
 })
 
 async function build() {
-  await task.clear()
-  await task.getPackFile(`./src/`, `./dist/package`)
-  await task.ncc()
-  await task.compress()
-  await task.pack()
-  argv.minxin && await task.minxin(argv.minxin)
-  argv.test && await task.test()
+  if(argv[`--run`]) {
+    await Promise.all(argv[`--run`].split(`,`).map(name => task[name]()))
+  } else {
+    await task.clear()
+    await task.getPackFile()
+    await task.ncc()
+    await task.compress()
+    await task.pack()
+    argv.minxin && await task.minxin(argv.minxin)
+    argv.test && await task.test()
+  }
 }
 
 build()
