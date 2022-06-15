@@ -1,5 +1,6 @@
 const fs = require(`fs`)
 const shell = require(`shelljs`)
+const util = require(`./util.js`)
 const packagePath = `./src/package.json`
 const package = require(packagePath)
 const {name, version, bin = {}} = package
@@ -167,14 +168,39 @@ async function getPackFile(inputDir, outDir) {
   }
 }
 
+const task = new Proxy({
+  clear,
+  getPackFile,
+  ncc,
+  compress,
+  pack,
+  minxin,
+  test,
+}, {
+  get(obj, key) {
+    return (...arg) => {
+      const timeLable = util.getFullLine({name: `task-time ${key}`})
+      return new Promise(async (resolve, reject) => {
+        console.time(timeLable)
+        try {
+          resolve(await obj[key](...arg))
+        } catch (error) {
+          reject(error)
+        }
+        console.timeEnd(timeLable)
+      })
+    }
+  }
+})
+
 async function build() {
-  await clear()
-  await getPackFile(`./src/`, `./dist/package`)
-  await ncc()
-  await compress()
-  await pack()
-  argv.minxin && await minxin(argv.minxin)
-  argv.test && await test()
+  await task.clear()
+  await task.getPackFile(`./src/`, `./dist/package`)
+  await task.ncc()
+  await task.compress()
+  await task.pack()
+  argv.minxin && await task.minxin(argv.minxin)
+  argv.test && await task.test()
 }
 
 build()
