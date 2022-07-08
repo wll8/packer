@@ -58,11 +58,20 @@ function clear() {
  * 处理为单文件
  */
 function ncc() {
+  const oldList = [...shell.ls(`-ARL`, `./dist/package`)]
   // ncc 需要依赖(偷懒使用符号链接)才能进行合并
   shell.exec(`npx shx ln -s ${__dirname}/src/node_modules ${__dirname}/dist/package/node_modules`)
   shell.exec(`npx ncc build ./dist/package/index.js -o ./dist/package/`)
   // 移除 node_modules
   shell.exec(`npx shx rm -rf ${__dirname}/dist/package/node_modules`)
+  
+  // 删除多余的文件, 因为因他已经被打包到 ncc 中
+  const newList = [...shell.ls(`-ARL`, `./dist/package`)]
+  newList.forEach(item => {
+    if(new Set(oldList).has(item) && ([`index.js`, `package.json`, `package-lock.json`].includes(item) === false)) {
+      shell.rm(`-f`, `${__dirname}/dist/package/${item}`)
+    }
+  })
 
   // 删除依赖声明 - 因为打包为单文件后就不需要此声明了
   package.dependencies = undefined
@@ -177,8 +186,8 @@ async function build() {
   } else {
     await task.clear()
     await task.getPackFile()
-    // query[`--ncc`] && await task.ncc()
-    // query[`--compress`] && await task.compress()
+    query[`--ncc`] && await task.ncc()
+    query[`--compress`] && await task.compress()
     await task.pack()
     query[`--minxin`] && await task.minxin()
     query[`--test`] && await task.test()

@@ -17,6 +17,7 @@ npm run build:test
 
 ## todo
 - [x] feat: 使用 npm pack 进行打包
+- [ ] refactor: 转换 shx 为 shelljs
 - [x] feat: 打包为单文件
 - [x] feat: 压缩
 - [x] feat: 支持使用 `--run=fn1,fn2,...` 的形式运行指定任务

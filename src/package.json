@@ -6,9 +6,6 @@
   "bin": {
     "pkg": "index.js"
   },
-  "files": [
-    "index.js"
-  ],
   "dependencies": {
     "shelljs": "^0.8.5"
   }
